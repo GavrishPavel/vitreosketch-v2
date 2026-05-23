@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-i18n="pageTitle">Laser Vitreolysis — Game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <a href="../" class="brand">VitreoSketch</a>
+    <nav class="site-nav">
+      <a href="../" data-i18n="navFloaters">Floater simulator</a>
+      <a href="./" class="active" data-i18n="navLysis">Lysis · game</a>
+    </nav>
+    <div class="topbar-spacer"></div>
+    <label class="lang-picker" for="languageSelect">
+      <select id="languageSelect" aria-label="Language selector"></select>
+    </label>
+  </div>
+  <header>
+    <h1><span data-i18n="mainTitle">Laser vitreolysis</span><span class="sub" data-i18n="subTitle">YAG simulator</span></h1>
+    <div class="case-info">
+      <div class="case-line"><span class="lbl" data-i18n="caseLabel">Case:</span> <span id="caseName">—</span></div>
+      <div class="case-desc" id="caseDesc" data-i18n="loading">Loading…</div>
+    </div>
+  </header>
+
+  <main>
+    <section class="viewport">
+      <canvas id="fundusCanvas" width="780" height="780"></canvas>
+      <div class="overlay-hud top-left">
+        <div class="hud-row"><span class="k" data-i18n="hudTime">Time</span> <span id="time" class="v">00:00</span></div>
+        <div class="hud-row"><span class="k" data-i18n="hudShots">Shots</span> <span id="shots" class="v">0</span></div>
+        <div class="hud-row"><span class="k" data-i18n="hudScore">Score</span> <span id="score" class="v">0</span></div>
+      </div>
+      <div class="overlay-hud bottom-right">
+        <div class="hud-row"><span class="k" data-i18n="hudTotalEnergy">Total energy</span> <span id="totalEnergy" class="v">0.0 mJ</span></div>
+        <div class="hud-row"><span class="k" data-i18n="hudEfficiency">Efficiency</span> <span id="efficiency" class="v">—</span></div>
+      </div>
+    </section>
+
+    <aside class="controls">
+      <div class="panel depth-view">
+        <div class="panel-title" data-i18n="panelAnatomy">Anatomical axis</div>
+        <canvas id="depthCanvas" width="248" height="320"></canvas>
+        <div class="depth-hint" data-i18n="depthHint">Anteroposterior focus projection</div>
+      </div>
+
+      <div class="panel control-group">
+        <div class="row"><label data-i18n="energyLabel">Pulse energy</label><span class="badge" id="energyVal">3.0 mJ</span></div>
+        <input type="range" id="energy" min="0.5" max="10" step="0.1" value="3.0">
+        <div class="hint" data-i18n="energyHint">Working range 3–7 mJ. > 8 mJ — high risk.</div>
+      </div>
+
+      <div class="panel control-group">
+        <div class="row"><label data-i18n="focusLabel">Focus depth (Z)</label><span class="badge" id="focusVal">0.50</span></div>
+        <input type="range" id="focus" min="0" max="1" step="0.005" value="0.5">
+        <div class="hint" data-i18n="focusHint">0 = posterior lens capsule, 1 = retina. Mouse wheel and ↑/↓.</div>
+      </div>
+
+      <div class="panel control-group">
+        <div class="row"><label data-i18n="spotLabel">Spot size</label><span class="badge" id="spotVal">8 µm</span></div>
+        <input type="range" id="spot" min="4" max="24" step="1" value="8">
+        <div class="hint" data-i18n="spotHint">Smaller = higher energy density.</div>
+      </div>
+
+      <div class="panel control-group">
+        <div class="row"><label data-i18n="convLabel">Convergence angle</label><span class="badge" id="convVal">16°</span></div>
+        <input type="range" id="convergence" min="8" max="24" step="1" value="16">
+        <div class="hint" data-i18n="convHint">Larger = narrower depth of focus, more precise aim.</div>
+      </div>
+
+      <div class="panel status">
+        <div class="panel-title" data-i18n="eyeStatusTitle">Eye status</div>
+        <div class="status-bar">
+          <label data-i18n="lensLabel">Lens</label>
+          <div class="bar"><div id="lensBar" class="fill safe"></div></div>
+          <span id="lensPct">0%</span>
+        </div>
+        <div class="status-bar">
+          <label data-i18n="retinaLabel">Retina</label>
+          <div class="bar"><div id="retinaBar" class="fill safe"></div></div>
+          <span id="retinaPct">0%</span>
+        </div>
+        <div class="status-bar">
+          <label data-i18n="floatersLabel">Floaters</label>
+          <div class="bar"><div id="floatersBar" class="fill safe"></div></div>
+          <span id="floatersCount">0 / 0</span>
+        </div>
+      </div>
+
+      <div class="panel buttons">
+        <button id="newCaseBtn" class="primary" data-i18n="btnNewCase">New case</button>
+        <button id="saccadeBtn" data-i18n="btnSaccade">Patient saccade</button>
+        <button id="pauseBtn" data-i18n="btnPause">Pause</button>
+      </div>
+
+      <div id="alerts"></div>
+    </aside>
+  </main>
+
+  <footer>
+    <div class="hotkeys">
+      <span><kbd data-i18n="hkMouse">Mouse</kbd> <span data-i18n="hkMouseAct">aim</span></span>
+      <span><kbd data-i18n="hkFire">LMB</kbd> / <kbd>Space</kbd> <span data-i18n="hkFireAct">fire</span></span>
+      <span><kbd data-i18n="hkWheel">Wheel</kbd> / <kbd>↑↓</kbd> <span data-i18n="hkFocusAct">focus</span></span>
+      <span><kbd>1–9</kbd> <span data-i18n="hkEnergyAct">energy</span></span>
+      <span><kbd>P</kbd> <span data-i18n="hkPauseAct">pause</span></span>
+      <span><kbd>S</kbd> <span data-i18n="hkSaccadeAct">saccade</span></span>
+      <span><kbd>M</kbd> <span data-i18n="hkSoundAct">sound</span></span>
+    </div>
+  </footer>
+
+  <div id="modal" class="hidden">
+    <div class="modal-content">
+      <h2 id="modalTitle"></h2>
+      <p id="modalBody"></p>
+      <div class="modal-buttons">
+        <button id="modalRetry" class="primary" data-i18n="btnRetryCase">Retry case</button>
+        <button id="modalNext" data-i18n="btnNewCase">New case</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="caseModal" class="hidden">
+    <div class="modal-content">
+      <h2 data-i18n="caseModalTitle">Select case</h2>
+      <div id="caseList" class="case-list"></div>
+    </div>
+  </div>
+</div>
+<script src="game.js"></script>
+</body>
+</html>

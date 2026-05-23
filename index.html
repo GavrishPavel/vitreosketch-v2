@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VitreoSketch — Визуализатор помутнений</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="topbar">
+    <a href="./" class="brand">VitreoSketch</a>
+    <nav class="site-nav">
+      <a href="./" class="active" data-i18n="navFloaters">Floater simulator</a>
+      <a href="./lysis/" data-i18n="navLysis">Lysis · game</a>
+    </nav>
+    <div class="topbar-spacer"></div>
+    <label class="lang-picker" for="languageSelect">
+      <span class="sr-only">Язык</span>
+      <select id="languageSelect" aria-label="Language selector"></select>
+    </label>
+  </div>
+
+  <div class="app-shell">
+    <aside class="panel controls">
+      <div>
+        <h1 data-i18n="title">Floater visualizer & editor</h1>
+        <p class="lead" data-i18n="lead">Compose an MVP simulation of common vitreous floater shapes, then animate them with gentle drift or camera-based eye tracking.</p>
+      </div>
+
+      <section>
+        <h2 data-i18n="eyeTitle">1. Eye setup</h2>
+        <div class="field-row compact stack-mobile">
+          <label>
+            <span data-i18n="activeEye">Editing eye</span>
+            <div class="pill-row">
+              <button type="button" class="ghost active" data-eye-target="left" data-i18n="leftEye">Left eye</button>
+              <button type="button" class="ghost" data-eye-target="right" data-i18n="rightEye">Right eye</button>
+            </div>
+          </label>
+          <label>
+            <span data-i18n="previewEyes">Preview eyes</span>
+            <div class="pill-row">
+              <button type="button" class="ghost" data-preview-eyes="active" data-i18n="previewActiveOnly">Active eye only</button>
+              <button type="button" class="ghost active" data-preview-eyes="both" data-i18n="previewBothEyes">Both eyes</button>
+            </div>
+          </label>
+        </div>
+      </section>
+
+      <section>
+        <h2 data-i18n="addTitle">2. Add floaters</h2>
+        <div class="preset-grid">
+          <button data-preset="dot" data-i18n="presetDot">Dot cluster</button>
+          <button data-preset="ring" data-i18n="presetRing">Ring</button>
+          <button data-preset="thread" data-i18n="presetThread">Thread</button>
+          <button data-preset="cobweb" data-i18n="presetCobweb">Cobweb</button>
+          <button data-preset="smudge" data-i18n="presetSmudge">Smudge</button>
+          <button data-preset="cloud" data-i18n="presetCloud">Cloud</button>
+        </div>
+        <p class="hint add-hint" data-i18n="addHint">Based on commonly described forms: spots, rings/Weiss rings, thread-like strands, cobwebs, and cloudy smudges.</p>
+      </section>
+
+      <section>
+        <h2 data-i18n="drawTitle">3. Draw your own</h2>
+        <div class="field-row compact">
+          <label><span data-i18n="brushSize">Brush size</span> <input id="brushSize" type="range" min="1" max="16" value="4" /></label>
+          <label><span data-i18n="brushAlpha">Stroke alpha</span> <input id="brushAlpha" type="range" min="0.05" max="0.8" step="0.05" value="0.25" /></label>
+        </div>
+        <div class="toggle-row wrap">
+          <button id="drawToggle" data-i18n="enableDrawing">Enable drawing</button>
+          <button id="clearDrawings" class="ghost" data-i18n="clearDrawings">Clear drawings</button>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <h2 data-i18n="selectionTitle">4. Selected floater</h2>
+          <span id="selectionStatus" class="hint" data-i18n="selectionNone">Nothing selected</span>
+        </div>
+        <label><span data-i18n="contrast">Contrast</span> <input id="itemContrast" type="range" min="0.15" max="1" step="0.05" value="0.55" /></label>
+        <label><span data-i18n="blur">Blur</span> <input id="itemBlur" type="range" min="0" max="24" step="1" value="9" /></label>
+        <label><span data-i18n="structure">Structure</span> <input id="itemStructure" type="range" min="0" max="1" step="0.05" value="0.45" /></label>
+        <label><span data-i18n="scale">Scale</span> <input id="itemScale" type="range" min="0.2" max="3.4" step="0.05" value="1" /></label>
+        <label><span data-i18n="rotation">Rotation</span> <input id="itemRotation" type="range" min="-180" max="180" step="1" value="0" /></label>
+        <div class="toggle-row wrap">
+          <button id="duplicateSelected" class="ghost" data-i18n="duplicateSelected">Duplicate</button>
+          <button id="deleteSelected" class="ghost danger" data-i18n="deleteSelected">Delete selected</button>
+        </div>
+        <p class="hint" data-i18n="selectionHint">Click a floater to edit it. Ctrl/Cmd+C copies it, Ctrl/Cmd+V pastes it.</p>
+      </section>
+
+      <section>
+        <h2 data-i18n="motionTitle">5. Motion</h2>
+        <!-- Скрытые элементы для совместимости с app.js: режим только random -->
+        <div hidden>
+          <input type="radio" name="motionMode" value="random" checked />
+          <input type="radio" name="motionMode" value="eye" />
+          <button id="eyeTrackingInfoButton" type="button"></button>
+          <div id="eyeTrackingInfoPopover"></div>
+        </div>
+        <label class="motion-intensity-row"><span data-i18n="motionIntensity">Motion intensity</span> <input id="motionIntensity" type="range" min="0.2" max="1.5" step="0.05" value="0.8" /></label>
+        <div class="toggle-row wrap align-center">
+          <button id="toggleMotion" data-i18n="stopMotion">Stop movement</button>
+          <span id="cameraStatus" class="hint" hidden></span>
+        </div>
+      </section>
+
+      <section>
+        <h2 data-i18n="sceneTitle">6. Scene</h2>
+        <div class="preset-grid scene-grid">
+          <button data-scene="plain" data-i18n="scenePlain">No background</button>
+          <button data-scene="beach" data-i18n="sceneBeach">Beach</button>
+          <button data-scene="snow" data-i18n="sceneSnow">Snow</button>
+        </div>
+        <div class="toggle-row wrap scene-reset-row">
+          <button id="resetScene" class="ghost" data-i18n="resetScene">Reset scene</button>
+        </div>
+      </section>
+    </aside>
+
+    <main class="stage-wrap">
+      <div class="stage-toolbar">
+        <span data-i18n="preview">Preview</span>
+        <div class="toolbar-actions">
+          <button id="shareLink" class="ghost small" data-i18n="shareLink">Share link</button>
+          <button id="downloadPng" class="ghost small" data-i18n="downloadPng">Download PNG</button>
+          <button id="downloadPdf" class="ghost small" data-i18n="downloadPdf">Download PDF</button>
+          <button id="previewMode" class="ghost small" data-i18n="focusMode">Focus mode</button>
+          <button id="fullscreenMode" class="ghost small" data-i18n="fullscreen">Fullscreen</button>
+        </div>
+      </div>
+      <div id="stage" class="stage scene-plain">
+        <div class="scene-overlay"></div>
+        <div id="leftMotionLayer" class="motion-layer active-eye-layer" data-eye="left">
+          <div id="leftFloaterLayer" class="floater-layer"></div>
+          <svg id="leftDrawLayer" class="draw-layer"></svg>
+        </div>
+        <div id="rightMotionLayer" class="motion-layer" data-eye="right">
+          <div id="rightFloaterLayer" class="floater-layer"></div>
+          <svg id="rightDrawLayer" class="draw-layer"></svg>
+        </div>
+      </div>
+      <video id="cameraFeed" playsinline autoplay muted></video>
+      <div id="toast" class="toast" hidden></div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
