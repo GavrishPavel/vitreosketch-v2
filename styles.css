@@ -78,7 +78,12 @@ button, input, select { font: inherit; }
 .contact-link:hover {
   color: var(--text);
 }
-.topbar .lang-picker { max-width: 140px; }
+.topbar .lang-picker {
+  max-width: 140px;
+  margin-bottom: 0;
+  display: inline-flex;
+  align-items: center;
+}
 .topbar .lang-picker select {
   width: 100%;
   appearance: none;
