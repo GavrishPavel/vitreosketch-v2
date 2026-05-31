@@ -473,12 +473,19 @@ function serializeState() {
 }
 function encodeSceneState() {
   const json = JSON.stringify(serializeState());
+  if (window.LZString?.compressToEncodedURIComponent) {
+    return window.LZString.compressToEncodedURIComponent(json);
+  }
   const bytes = new TextEncoder().encode(json);
   let binary = '';
   bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 }
 function decodeSceneState(value) {
+  if (window.LZString?.decompressFromEncodedURIComponent) {
+    const decompressed = window.LZString.decompressFromEncodedURIComponent(value);
+    if (decompressed) return JSON.parse(decompressed);
+  }
   const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
   const padded = normalized + '='.repeat((4 - normalized.length % 4) % 4);
   const binary = atob(padded);
