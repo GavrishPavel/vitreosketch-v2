@@ -1,5 +1,6 @@
 const stage = document.getElementById('stage');
 const cameraFeed = document.getElementById('cameraFeed');
+const SHARE_API_BASE = '/api/scenes';
 
 const languageMeta = {
   en: { label: 'English', title: 'VitreoSketch — Floater Visualizer' },
@@ -512,9 +513,29 @@ function applySerializedState(snapshot) {
 }
 function updateShareUrl() {
   const url = new URL(window.location.href);
+  url.searchParams.delete('s');
   url.hash = `scene=${encodeSceneState()}`;
   history.replaceState(null, '', url.toString());
   return url.toString();
+}
+function buildShortSceneUrl(sceneId) {
+  const url = new URL(window.location.href);
+  url.hash = '';
+  url.searchParams.set('s', sceneId);
+  return url.toString();
+}
+async function createShortSceneUrl() {
+  const response = await fetch(SHARE_API_BASE, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data: serializeState() })
+  });
+  if (!response.ok) throw new Error(`Failed to save scene: ${response.status}`);
+  const payload = await response.json();
+  if (!payload?.id) throw new Error('No scene id returned');
+  const shortUrl = buildShortSceneUrl(payload.id);
+  history.replaceState(null, '', shortUrl);
+  return shortUrl;
 }
 function showToast(message) {
   if (!controls.toast) return;
@@ -530,7 +551,13 @@ function queueShareUrlSync() {
   shareUrlSyncTimer = setTimeout(() => updateShareUrl(), 80);
 }
 async function shareCurrentScene() {
-  const url = updateShareUrl();
+  let url;
+  try {
+    url = await createShortSceneUrl();
+  } catch (error) {
+    console.error('Short link failed, falling back to local URL', error);
+    url = updateShareUrl();
+  }
   try {
     await navigator.clipboard.writeText(url);
     showToast(t('shareLinkCopied'));
@@ -666,7 +693,31 @@ async function downloadCurrentPdf() {
     if (wasPreview) document.body.classList.add('preview-only');
   }
 }
-function loadSceneFromUrl() {
+async function loadSceneFromUrl() {
+  const url = new URL(window.location.href);
+  const sceneId = url.searchParams.get('s');
+  if (sceneId) {
+    try {
+      const response = await fetch(`${SHARE_API_BASE}/${encodeURIComponent(sceneId)}`);
+      if (!response.ok) throw new Error(`Failed to load saved scene: ${response.status}`);
+      const payload = await response.json();
+      if (payload?.data) {
+        applySerializedState(payload.data);
+        EYES.forEach((eye) => { renderItems(eye); renderDrawings(eye); });
+        applyScene();
+        applyTranslations();
+        controls.motionIntensity.value = String(state.motionIntensity);
+        controls.brushSize.value = String(state.brushSize);
+        controls.brushAlpha.value = String(state.brushAlpha);
+        motionInputs.forEach((input) => { input.checked = input.value === state.motionMode; });
+        updateEyeUi();
+        updateMotionButton();
+      }
+      return;
+    } catch (error) {
+      console.error('Failed to load saved scene from API', error);
+    }
+  }
   const hash = window.location.hash || '';
   const match = hash.match(/scene=([^&]+)/);
   if (!match) return;
